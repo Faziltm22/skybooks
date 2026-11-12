@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="section-label">Company assets</div>
+<h1 class="page-title">{% if asset %}Edit asset{% else %}Add asset or licence{% endif %}</h1>
+<p class="muted">Enter the required asset details first. Open advanced details for optional tracking information.</p>
+<div class="card p-4">
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <h5>Required details</h5>
+    <div class="row g-3">
+      <div class="col-md-4"><label class="form-label">Asset tag <span class="text-danger">*</span></label><input class="form-control" name="asset_tag" value="{{ asset.asset_tag|default:'' }}" required></div>
+      <div class="col-md-5"><label class="form-label">Name <span class="text-danger">*</span></label><input class="form-control" name="name" value="{{ asset.name|default:'' }}" required></div>
+      <div class="col-md-3"><label class="form-label">Asset type <span class="text-danger">*</span></label><select class="form-select" name="asset_type" required><option value="">Choose type</option>{% for value,label in types %}<option value="{{ value }}" {% if asset.asset_type == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+    </div>
+    <details class="mt-4">
+      <summary class="btn btn-outline-primary">＋ More details / advanced data</summary>
+      <div class="row g-3 mt-2">
+        <div class="col-md-4"><label class="form-label">Brand / model</label><input class="form-control" name="brand_model" value="{{ asset.brand_model|default:'' }}"></div>
+        <div class="col-md-4"><label class="form-label">Serial / licence key reference</label><input class="form-control" name="serial_number" value="{{ asset.serial_number|default:'' }}"></div>
+        <div class="col-md-4"><label class="form-label">Condition</label><select class="form-select" name="condition">{% for value,label in conditions %}<option value="{{ value }}" {% if asset.condition == value or not asset and value == 'FRESH' %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+        <div class="col-md-4"><label class="form-label">Status</label><select class="form-select" name="status">{% for value,label in statuses %}<option value="{{ value }}" {% if asset.status == value or not asset and value == 'ACTIVE' %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+        <div class="col-md-4"><label class="form-label">Purchase date</label><input class="form-control" type="date" name="purchase_date" value="{{ asset.purchase_date|date:'Y-m-d' }}"></div>
+        <div class="col-md-4"><label class="form-label">Purchase value ₹</label><input class="form-control" type="number" min="0" step="0.01" name="purchase_cost" value="{{ asset.purchase_cost|default:0 }}"></div>
+        <div class="col-md-4"><label class="form-label">Licence renewal / expiry</label><input class="form-control" type="date" name="license_expiry" value="{{ asset.license_expiry|date:'Y-m-d' }}"></div>
+        <div class="col-md-4"><label class="form-label">Assigned to</label><input class="form-control" name="assigned_to" value="{{ asset.assigned_to|default:'' }}"></div>
+        <div class="col-md-4"><label class="form-label">Location</label><input class="form-control" name="location" value="{{ asset.location|default:'' }}"></div>
+        <div class="col-12">
+          <label class="form-label">Images / receipts (up to 5 total, PNG, JPG or WebP, max 8 MB each)</label>
+          <input class="form-control" type="file" name="images" accept="image/png,image/jpeg,image/webp" multiple data-existing-count="{{ image_count }}" {% if image_count >= 5 %}disabled{% endif %}>
+          <div class="form-text"><span id="image-count">{{ image_count }}</span> of 5 images currently saved.</div>
+          {% if asset.screenshot %}<div class="mt-2"><a href="{% url 'asset_attachment' asset.pk %}" target="_blank">View existing receipt / asset image</a></div>{% endif %}
+          {% if asset.images.all %}
+            <div class="d-flex flex-wrap gap-2 mt-2">{% for image in asset.images.all %}<a href="{% url 'asset_image_attachment' image.pk %}" target="_blank"><img src="{% url 'asset_image_attachment' image.pk %}" alt="Asset image" class="rounded" style="width:64px;height:64px;object-fit:cover"></a>{% endfor %}</div>
+          {% endif %}
+        </div>
+        <div class="col-12"><label class="form-label">Notes</label><textarea class="form-control" rows="3" name="notes">{{ asset.notes|default:'' }}</textarea></div>
+      </div>
+    </details>
+    <div class="mt-4"><button class="btn btn-primary">Save asset</button> <a href="{% url 'assets' %}" class="btn btn-light">Cancel</a></div>
+  </form>
+</div>
+<script>
+const imagesInput=document.querySelector('input[name="images"]');
+if(imagesInput){imagesInput.addEventListener('change',()=>{const count=Number(imagesInput.dataset.existingCount)+imagesInput.files.length;document.getElementById('image-count').textContent=count;if(count>5){imagesInput.setCustomValidity('An asset can have a maximum of 5 images.');imagesInput.reportValidity()}else{imagesInput.setCustomValidity('')}})}
+</script>
+{% endblock %}

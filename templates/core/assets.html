@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-end mb-4">
+  <div><div class="section-label">Company equipment</div><h1 class="page-title">Assets & licences</h1><p class="muted mb-0">Manage equipment and licences in a searchable table, with optional advanced details.</p></div>
+  {% if module_access.assets_add %}<a class="btn btn-primary mt-3" href="{% url 'asset_create' %}">＋ Add asset</a>{% endif %}
+</div>
+<div class="row g-3 mb-3">
+  <div class="col-md-6"><div class="card p-3"><div class="small muted">Total active assets</div><strong class="metric">{{ asset_count }}</strong></div></div>
+  <div class="col-md-6"><div class="card p-3"><div class="small muted">Total recorded purchase value</div><strong class="metric">₹{{ asset_value|floatformat:2 }}</strong></div></div>
+</div>
+{% include 'core/includes/page_search.html' %}
+<div class="btn-group btn-group-sm mb-3">
+  <a class="btn {% if not archived %}btn-dark{% else %}btn-light{% endif %}" href="{% url 'assets' %}{% if query %}?q={{ query|urlencode }}{% endif %}">Active assets</a>
+  <a class="btn {% if archived %}btn-dark{% else %}btn-light{% endif %}" href="?status=RETIRED{% if query %}&amp;q={{ query|urlencode }}{% endif %}">Retired history</a>
+</div>
+<div class="card p-3 p-md-4 table-responsive">
+  <table class="table align-middle mb-0">
+    <thead><tr><th>Asset tag</th><th>Name</th><th>Type</th><th>Status</th><th>Value</th><th>Photos</th><th></th></tr></thead>
+    <tbody>
+      {% for a in assets %}
+        <tr>
+          <td class="fw-bold">{{ a.asset_tag }}</td>
+          <td>{{ a.name }}</td>
+          <td>{{ a.get_asset_type_display }}</td>
+          <td><span class="badge rounded-pill {% if a.status == 'ACTIVE' %}text-bg-success{% elif a.status == 'REPAIR' %}text-bg-warning{% else %}text-bg-secondary{% endif %}">{{ a.get_status_display }}</span></td>
+          <td>₹{{ a.purchase_cost|floatformat:2 }}</td>
+          <td>{{ a.image_count }} / 5</td>
+          <td><button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="collapse" data-bs-target="#asset-details-{{ a.pk }}" aria-expanded="false" aria-controls="asset-details-{{ a.pk }}">More details</button></td>
+        </tr>
+        <tr class="collapse" id="asset-details-{{ a.pk }}">
+          <td colspan="7" class="bg-light">
+            <div class="row g-3 py-2">
+              <div class="col-md-4"><strong>Brand / model</strong><div>{{ a.brand_model|default:'—' }}</div></div>
+              <div class="col-md-4"><strong>Serial / licence</strong><div>{{ a.serial_number|default:'—' }}</div></div>
+              <div class="col-md-4"><strong>Condition</strong><div>{{ a.get_condition_display }}</div></div>
+              <div class="col-md-4"><strong>Purchase date</strong><div>{{ a.purchase_date|default:'—' }}</div></div>
+              <div class="col-md-4"><strong>Assigned / location</strong><div>{{ a.assigned_to|default:'—' }} · {{ a.location|default:'—' }}</div></div>
+              <div class="col-md-4"><strong>Licence expires</strong><div>{{ a.license_expiry|default:'—' }}</div></div>
+              {% if a.notes %}<div class="col-12"><strong>Notes</strong><div>{{ a.notes|linebreaksbr }}</div></div>{% endif %}
+              <div class="col-12">
+                <strong>Images and receipts</strong>
+                <div class="d-flex flex-wrap gap-2 mt-2">
+                  {% if a.screenshot %}<a href="{% url 'asset_attachment' a.pk %}" target="_blank"><img src="{% url 'asset_attachment' a.pk %}" alt="Asset image" class="rounded" style="width:76px;height:76px;object-fit:cover"></a>{% endif %}
+                  {% for image in a.images.all %}<a href="{% url 'asset_image_attachment' image.pk %}" target="_blank"><img src="{% url 'asset_image_attachment' image.pk %}" alt="Asset image" class="rounded" style="width:76px;height:76px;object-fit:cover"></a>{% endfor %}
+                  {% if not a.screenshot and not a.images.all %}<span class="muted">No images attached.</span>{% endif %}
+                </div>
+              </div>
+              <div class="col-12 d-flex gap-2">
+                {% if module_access.assets_edit %}<a class="btn btn-sm btn-outline-secondary" href="{% url 'asset_edit' a.pk %}">Edit</a>{% endif %}
+                {% if module_access.assets_delete and a.status != 'RETIRED' %}<form method="post" action="{% url 'asset_archive' a.pk %}">{% csrf_token %}<button class="btn btn-sm btn-outline-danger" onclick="return confirm('Retire this asset and keep its history?')">Retire</button></form>{% endif %}
+              </div>
+            </div>
+          </td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="7" class="text-center muted py-5">No assets found. Add an asset with its tag, name, and type, then enter optional details as needed.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

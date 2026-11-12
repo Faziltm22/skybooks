@@ -1,0 +1,9 @@
+<form method="get" action="{{ request.path }}" class="card p-3 mb-3">
+  {% if condition %}<input type="hidden" name="condition" value="{{ condition }}">{% endif %}
+  {% if start %}<input type="hidden" name="start" value="{{ start }}">{% endif %}
+  {% if end %}<input type="hidden" name="end" value="{{ end }}">{% endif %}
+  {% if status %}<input type="hidden" name="status" value="{{ status }}">{% endif %}
+  {% if kind %}<input type="hidden" name="type" value="{{ kind }}">{% endif %}
+  {% if archived %}<input type="hidden" name="status" value="RETIRED">{% endif %}
+  <div class="d-flex flex-wrap align-items-center gap-2"><span class="muted fw-semibold me-1">Search this page</span><input class="form-control flex-grow-1" style="min-width:210px;max-width:540px" type="search" name="q" value="{{ query }}" placeholder="Search current page records…" aria-label="Search this page"><button class="btn btn-primary">Search</button></div>
+</form>

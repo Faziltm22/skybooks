@@ -1,0 +1,7 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="mb-4"><div class="section-label">Workspace search</div><h1 class="page-title mb-1">Search results</h1><p class="muted mb-0">Matches are limited to sections your account can access.</p></div>
+{% if not has_searched %}<div class="card p-5 text-center"><div class="display-6">⌕</div><h4>Search your workspace</h4><p class="muted mb-0">Search by name, reference, category, customer, serial number, or service details.</p></div>
+{% elif groups %}<div class="d-grid gap-3">{% for group in groups %}<section class="card p-3 p-md-4"><div class="d-flex justify-content-between align-items-center mb-2"><h5 class="mb-0">{{ group.name }}</h5><span class="badge rounded-pill text-bg-light">{{ group.items|length }} matches</span></div><div class="list-group list-group-flush">{% for item in group.items %}<a class="list-group-item list-group-item-action px-0 py-3" href="{{ item.url }}"><div class="d-flex justify-content-between gap-3"><strong>{{ item.title }}</strong><span class="text-primary">→</span></div><div class="small muted mt-1">{{ item.detail }}</div></a>{% endfor %}</div></section>{% endfor %}</div>
+{% else %}<div class="card p-5 text-center"><div class="display-6">⌕</div><h4>No matches found</h4><p class="muted mb-0">Try another name, item code, customer, reference, or description.</p></div>{% endif %}
+{% endblock %}

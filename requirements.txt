@@ -1,0 +1,7 @@
+Django>=5.1,<7.0
+python-dotenv>=1.0
+
+user 1 : id starnuxfazil
+    pass starnux22
+ supr user : starnuxadmin
+ pass      : starnuxadmin

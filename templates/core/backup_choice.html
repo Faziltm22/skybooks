@@ -1,0 +1,7 @@
+{% extends 'base.html' %}{% block content %}
+<div class="section-label">Owner controls</div><h1 class="page-title">Download a full backup</h1><p class="muted">Each backup is a fresh snapshot of the database. It does not append duplicate rows to an earlier workbook.</p>
+<div class="row g-3 mt-2">
+<div class="col-lg-4"><div class="card p-4 h-100"><h5>Same filename</h5><p class="muted">Downloads as <code>starnux_full_backup.xlsx</code>. If your browser asks, replace the older copy.</p><a class="btn btn-primary mt-auto" href="{% url 'backup_excel' %}?mode=same">Download same-name Excel</a></div></div>
+<div class="col-lg-4"><div class="card p-4 h-100"><h5>New dated copy</h5><p class="muted">Keeps the previous backup and downloads a new file with the date and time.</p><a class="btn btn-outline-primary mt-auto" href="{% url 'backup_excel' %}?mode=new">Download a new Excel copy</a></div></div>
+<div class="col-lg-4"><div class="card p-4 h-100"><h5>Both</h5><p class="muted">Downloads a ZIP containing the standard-name workbook and a dated workbook.</p><a class="btn btn-outline-success mt-auto" href="{% url 'backup_excel' %}?mode=both">Download both backups</a></div></div>
+</div><div class="alert alert-info mt-4 mb-0">Uploaded images and documents are not embedded in Excel; their file paths are included in the workbook.</div>{% endblock %}

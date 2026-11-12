@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-end mb-4">
+  <div><div class="section-label">People &amp; programs</div><h1 class="page-title">Internships</h1><p class="muted mb-0">Manage applicants, active interns, mentors, dates, and fee tracking.</p></div>
+  {% if module_access.internships_add %}<a class="btn btn-primary mt-3" href="{% url 'internship_create' %}">＋ Add intern</a>{% endif %}
+</div>
+{% include 'core/includes/page_search.html' %}
+<div class="card p-3 p-md-4">
+  <div class="d-flex flex-wrap gap-2 mb-3">
+    {% for val,label in statuses %}<a class="btn btn-sm {% if status == val %}btn-primary{% else %}btn-outline-secondary{% endif %}" href="?status={{ val }}{% if query %}&amp;q={{ query|urlencode }}{% endif %}">{{ label }}</a>{% endfor %}
+    <a class="btn btn-sm btn-outline-secondary" href="{% url 'internships' %}{% if query %}?q={{ query|urlencode }}{% endif %}">All</a>
+  </div>
+  <div class="table-responsive"><table class="table align-middle">
+    <thead><tr><th>Internship ID</th><th>Program</th><th>Start date</th><th>Status</th><th>Details</th></tr></thead>
+    <tbody>
+      {% for r in records %}
+      <tr>
+        <td class="fw-bold">{{ r.number }}</td><td>{{ r.program }}</td><td>{{ r.start_date }}</td>
+        <td><span class="badge {% if r.status == 'ACTIVE' %}text-bg-success{% elif r.status == 'COMPLETED' %}text-bg-primary{% else %}text-bg-secondary{% endif %}">{{ r.get_status_display }}</span></td>
+        <td><button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="collapse" data-bs-target="#internship-details-{{ r.pk }}" aria-expanded="false" aria-controls="internship-details-{{ r.pk }}">More details</button></td>
+      </tr>
+      <tr class="collapse" id="internship-details-{{ r.pk }}"><td colspan="5" class="bg-light">
+        <div class="row g-3 py-2">
+          <div class="col-md-4"><strong>Intern</strong><div>{{ r.name }}</div></div>
+          <div class="col-md-4"><strong>Mentor</strong><div>{{ r.mentor|default:'—' }}</div></div>
+          <div class="col-md-4"><strong>Contact</strong><div>{{ r.email|default:'—' }}{% if r.phone %}<br>{{ r.phone }}{% endif %}</div></div>
+          <div class="col-md-4"><strong>Dates</strong><div>{{ r.start_date }} to {{ r.end_date|default:'Ongoing' }}</div></div>
+          <div class="col-md-4"><strong>Fee / paid</strong><div>₹{{ r.fee|floatformat:2 }} / ₹{{ r.fee_paid|floatformat:2 }}</div></div>
+          <div class="col-md-4"><strong>Added by</strong><div>{{ r.created_by|default:'—' }}</div></div>
+          <div class="col-12"><strong>Notes</strong><div>{{ r.notes|default:'—' }}</div></div>
+          <div class="col-12"><strong>Advance / fee payment records</strong>{% for payment in r.payments.all %}<div class="small {% if payment.is_void or payment.cash_entry.is_void %}text-muted text-decoration-line-through{% endif %}">{{ payment.date }} · ₹{{ payment.amount|floatformat:2 }} · {{ payment.get_payment_method_display }}{% if payment.reference %} · Ref {{ payment.reference }}{% endif %}{% if payment.is_void or payment.cash_entry.is_void %} · Voided / adjusted{% endif %}</div>{% empty %}<div class="small muted">No payment records yet.</div>{% endfor %}</div>
+          <div class="col-12 d-flex gap-2">
+            {% if r.fee_paid < r.fee %}{% if user.is_superuser or module_access.internships_edit %}<a class="btn btn-sm btn-primary" href="{% url 'internship_payment_create' r.pk %}">Record payment</a>{% endif %}{% endif %}
+            {% if user.is_superuser or module_access.internships_edit %}<a class="btn btn-sm btn-outline-secondary" href="{% url 'internship_edit' r.pk %}">Edit</a>{% endif %}
+            {% if user.is_superuser or module_access.internships_delete %}<form method="post" action="{% url 'internship_delete' r.pk %}">{% csrf_token %}<button class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete this internship program? Any linked fee payments will be voided from cashbook totals, while their voided entries and audit history are retained.')">Delete</button></form>{% endif %}
+          </div>
+        </div>
+      </td></tr>
+      {% empty %}<tr><td colspan="5" class="text-center muted py-5">No internship records found.</td></tr>{% endfor %}
+    </tbody>
+  </table></div>
+</div>
+{% endblock %}

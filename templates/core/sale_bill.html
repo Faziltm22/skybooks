@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+{% block title %}Sale bill {{ sale.number }}{% endblock %}
+{% block content %}
+<style>@media print{.sidebar,.topbar,.sidebar-backdrop,.no-print{display:none!important}.main-shell{margin:0!important}.workspace{width:100%!important;padding:0!important}.card{box-shadow:none!important;border:0!important}.bill-wrap{max-width:none!important;margin:0!important}.bill-title{font-size:2rem}}
+.bill-wrap{max-width:900px;margin:10px auto}.bill-header{border-bottom:2px solid #17243b;padding-bottom:18px;margin-bottom:22px}</style>
+<div class="bill-wrap card p-4 p-md-5">
+  <div class="d-flex justify-content-between align-items-start bill-header"><div><div class="section-label">STARNux</div><h1 class="bill-title mb-1">Sales bill</h1><div class="muted">Sale receipt</div></div><div class="text-end"><strong>{{ sale.number }}</strong><div>{{ sale.date }}</div>{% if sale.is_void %}<span class="badge text-bg-danger mt-2">VOID</span>{% endif %}</div></div>
+  <div class="row mb-4"><div class="col-md-6"><h6>Customer</h6><strong>{{ sale.customer_name|default:'Walk-in customer' }}</strong>{% if sale.customer_address %}<div>{{ sale.customer_address }}</div>{% endif %}{% if sale.customer_phone %}<div>{{ sale.customer_phone }}</div>{% endif %}{% if sale.customer_email %}<div>{{ sale.customer_email }}</div>{% endif %}</div><div class="col-md-6 text-md-end"><h6>Payment</h6><div>{{ sale.get_payment_type_display }}</div><div class="small muted">Recorded by {{ sale.created_by|default:'—' }}</div></div></div>
+  <div class="table-responsive"><table class="table align-middle"><thead><tr><th>#</th><th>Item</th><th class="text-end">Qty</th><th class="text-end">Unit price</th><th class="text-end">Discount</th><th class="text-end">Line total</th></tr></thead><tbody>{% for line in sale.lines.all %}<tr><td>{{ forloop.counter }}</td><td>{{ line.product.sku }} · {{ line.product.name }}</td><td class="text-end">{{ line.quantity|floatformat:3 }}</td><td class="text-end">₹{{ line.unit_price|floatformat:2 }}</td><td class="text-end">₹{{ line.discount|floatformat:2 }}</td><td class="text-end">₹{{ line.net_total|floatformat:2 }}</td></tr>{% endfor %}</tbody></table></div>
+  <div class="d-flex justify-content-end"><table class="table w-auto"><tr><th>Subtotal</th><td class="text-end">₹{{ sale.subtotal|floatformat:2 }}</td></tr><tr><th>Discount</th><td class="text-end">− ₹{{ sale.discount|floatformat:2 }}</td></tr><tr class="fs-5"><th>Total</th><th class="text-end">₹{{ sale.total|floatformat:2 }}</th></tr></table></div>
+  {% if sale.notes %}<div class="mt-3"><strong>Notes:</strong> {{ sale.notes }}</div>{% endif %}<div class="text-center muted small mt-5">Thank you for your business.</div>
+</div>
+<div class="d-flex justify-content-center gap-2 mt-3 no-print"><button class="btn btn-primary" onclick="window.print()">Print bill</button><a class="btn btn-light" href="{% url 'sales' %}">Back to sales</a></div>
+{% endblock %}

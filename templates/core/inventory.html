@@ -1,0 +1,159 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-end mb-4">
+  <div>
+    <div class="section-label">Stock control</div>
+    <h1 class="page-title">Stock room</h1>
+    <p class="muted mb-0">One item register with separate fresh and used stock balances, price, and recorder.</p>
+  </div>
+  <div class="mt-3">
+    <a class="btn btn-outline-secondary" href="{% url 'stock_purchases' %}">Purchases &amp; credit due</a>
+    {% if module_access.inventory_add %}
+      <a class="btn btn-outline-primary" href="{% url 'stock_move' %}">＋ Add / remove stock</a>
+      <a class="btn btn-primary" href="{% url 'product_create' %}">＋ New item</a>
+    {% endif %}
+  </div>
+</div>
+{% if user.is_superuser or module_access.inventory_add %}
+  <div class="mb-3"><a class="btn btn-outline-warning" href="{% url 'supplier_return_create' %}">Return stock to supplier</a></div>
+{% endif %}
+{% include 'core/includes/page_search.html' %}
+
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+  <div class="d-flex flex-wrap align-items-center gap-2">
+    {% if user.is_superuser %}
+      <div class="btn-group btn-group-sm">
+        <a class="btn {% if status == 'ACTIVE' %}btn-dark{% else %}btn-light{% endif %}" href="?status=ACTIVE&amp;condition={{ condition }}{% if query %}&amp;q={{ query|urlencode }}{% endif %}">Active</a>
+        <a class="btn {% if status == 'INACTIVE' %}btn-dark{% else %}btn-light{% endif %}" href="?status=INACTIVE&amp;condition={{ condition }}{% if query %}&amp;q={{ query|urlencode }}{% endif %}">Inactive</a>
+        <a class="btn {% if status == 'ARCHIVED' %}btn-dark{% else %}btn-light{% endif %}" href="?status=ARCHIVED&amp;condition={{ condition }}{% if query %}&amp;q={{ query|urlencode }}{% endif %}">Archived</a>
+      </div>
+    {% endif %}
+    <div class="btn-group btn-group-sm">
+      <a class="btn {% if condition == 'FRESH' %}btn-primary{% else %}btn-light{% endif %}" href="?status={{ status }}&amp;condition=FRESH{% if query %}&amp;q={{ query|urlencode }}{% endif %}">Fresh / new</a>
+      <a class="btn {% if condition == 'USED' %}btn-primary{% else %}btn-light{% endif %}" href="?status={{ status }}&amp;condition=USED{% if query %}&amp;q={{ query|urlencode }}{% endif %}">Used</a>
+    </div>
+  </div>
+  <span class="muted small">Showing {{ status|lower }} {{ condition|lower }} stock</span>
+</div>
+
+<div class="card p-3 p-md-4 table-responsive mb-4">
+  <table class="table align-middle">
+    <thead>
+      <tr><th>Stock ID</th><th>Item</th><th>Status</th><th>Condition</th><th>Quantity</th><th>Unit</th><th>Cost price</th><th>Sale price</th><th>Added by</th><th></th></tr>
+    </thead>
+    <tbody>
+      {% for r in rows %}
+        <tr>
+          <td class="fw-bold">{{ r.product.sku }}</td>
+          <td>{% if r.product.image %}<a href="{% url 'product_image' r.product.pk %}" target="_blank" rel="noopener" title="Open full-size product image"><img src="{% url 'product_image' r.product.pk %}" alt="View image of {{ r.product.name }}" class="rounded me-2" style="width:48px;height:48px;object-fit:cover"></a>{% endif %}{{ r.product.name }}</td>
+          <td>
+            {% if r.product.is_archived %}<span class="badge text-bg-secondary">Archived</span>
+            {% elif r.product.active %}<span class="badge text-bg-success">Active</span>
+            {% else %}<span class="badge text-bg-warning">Inactive</span>{% endif %}
+          </td>
+          <td><span class="badge {% if condition == 'FRESH' %}text-bg-success{% else %}text-bg-warning{% endif %}">{{ condition|lower }}</span></td>
+          <td class="fs-5 fw-bold">{{ r.quantity|floatformat:3 }}</td>
+          <td>{{ r.product.unit }}</td>
+          <td>₹{{ r.product.unit_cost|floatformat:2 }}</td>
+          <td>₹{{ r.product.sale_price|floatformat:2 }}</td>
+          <td>{{ r.product.created_by|default:'—' }}</td>
+          <td class="text-nowrap">
+            {% if module_access.inventory_edit and not r.product.is_archived %}
+              <a class="btn btn-sm btn-outline-secondary" href="{% url 'product_edit' r.product.pk %}">Edit</a>
+            {% endif %}
+            {% if user.is_superuser and not r.product.is_archived %}
+              <form method="post" action="{% url 'product_toggle_active' r.product.pk %}" class="d-inline">
+                {% csrf_token %}
+                {% if r.product.active %}
+                  <button class="btn btn-sm btn-outline-warning" onclick="return confirm('Mark this stock item inactive? It will no longer be available for sales or stock entry. You can activate it again later.')">Mark inactive</button>
+                {% else %}
+                  <button class="btn btn-sm btn-outline-success" onclick="return confirm('Activate this stock item again?')">Activate</button>
+                {% endif %}
+              </form>
+              <form method="post" action="{% url 'product_archive' r.product.pk %}" class="d-inline">
+                {% csrf_token %}
+                <button class="btn btn-sm btn-outline-danger" onclick="return confirm('Temporarily archive this item? Its stock and transaction history will be kept and it can be restored later.')">Archive</button>
+              </form>
+            {% endif %}
+            {% if user.is_superuser and r.product.is_archived %}
+              <form method="post" action="{% url 'product_restore' r.product.pk %}" class="d-inline">
+                {% csrf_token %}
+                <button class="btn btn-sm btn-outline-success" onclick="return confirm('Restore this archived item? Its previous active or inactive status will be kept.')">Restore</button>
+              </form>
+              <form method="post" action="{% url 'product_delete' r.product.pk %}" class="d-inline">
+                {% csrf_token %}
+                <button class="btn btn-sm btn-outline-danger" onclick="return confirm('Permanently delete this archived item? This cannot be undone. Items with stock or transaction history cannot be deleted.')">Delete permanently</button>
+              </form>
+            {% endif %}
+          </td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="10" class="text-center muted py-5">No items in this stock view.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="card p-3 p-md-4 mb-4">
+  <div class="d-flex justify-content-between"><h5>Stock movement history</h5><small class="muted">Full history · additions, sales, adjustments and removed entries</small></div>
+  <div class="table-responsive">
+    <table class="table mb-0">
+      <thead><tr><th>Date</th><th>Item</th><th>Qty in / out</th><th>Cost</th><th>Reference / reason</th><th>Recorded by</th><th></th></tr></thead>
+      <tbody>
+        {% for m in movements %}
+          <tr class="{% if m.is_void %}text-muted{% endif %}">
+            <td>{{ m.date }}<div class="small muted">{{ m.created_at|date:'H:i' }}</div></td>
+            <td>{{ m.product.name }} <span class="small muted">{{ m.get_condition_display }}</span></td>
+            <td class="{% if m.quantity < 0 %}text-danger{% else %}text-success{% endif %}">{{ m.quantity|floatformat:3 }} {{ m.product.unit }}</td>
+            <td>₹{{ m.unit_cost|floatformat:2 }}</td>
+            <td>{{ m.reference }} {{ m.notes }} {% if m.is_void %}<span class="badge text-bg-secondary">Removed</span>{% endif %}</td>
+            <td>{{ m.created_by|default:'—' }}</td>
+            <td class="text-nowrap">
+              {% if not m.is_void and m.can_change %}
+                {% if module_access.inventory_edit %}<a class="btn btn-sm btn-outline-secondary" href="{% url 'stock_movement_edit' m.pk %}">Edit</a>{% endif %}
+                {% if module_access.inventory_delete %}
+                  <form method="post" action="{% url 'stock_movement_void' m.pk %}" class="d-inline">{% csrf_token %}<button class="btn btn-sm btn-outline-danger" onclick="return confirm('Remove this movement from current stock?')">Delete</button></form>
+                {% endif %}
+              {% endif %}
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="7">No stock activity for this condition yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card p-3 p-md-4 mb-4">
+  <h5>Supplier returns</h5>
+  <div class="table-responsive">
+    <table class="table mb-0">
+      <thead><tr><th>Date</th><th>Supplier</th><th>Product</th><th>Qty</th><th>Settlement</th><th>Amount</th><th>Recorded by</th></tr></thead>
+      <tbody>
+        {% for r in returns %}
+          <tr><td>{{ r.date }}</td><td>{{ r.supplier }}</td><td>{{ r.product.name }}</td><td>{{ r.quantity|floatformat:3 }} {{ r.product.unit }}</td><td>{{ r.get_settlement_display }}</td><td>&#8377;{{ r.amount|floatformat:2 }}</td><td>{{ r.created_by|default:"-" }}</td></tr>
+        {% empty %}
+          <tr><td colspan="7" class="muted">No supplier returns recorded yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card p-3 p-md-4">
+  <h5>Stock change audit</h5>
+  <div class="table-responsive">
+    <table class="table mb-0">
+      <thead><tr><th>When</th><th>Action</th><th>Stock record</th><th>User</th><th>Details</th></tr></thead>
+      <tbody>
+        {% for log in audit_logs %}
+          <tr><td>{{ log.created_at|date:'Y-m-d H:i' }}</td><td>{{ log.get_action_display }}</td><td>{{ log.object_label }}</td><td>{{ log.actor|default:'—' }}</td><td>{{ log.details }}</td></tr>
+        {% empty %}
+          <tr><td colspan="5" class="muted">No stock changes recorded yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
